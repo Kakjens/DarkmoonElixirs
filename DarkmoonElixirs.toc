@@ -1,0 +1,9 @@
+## Interface: 70200
+## Version: 720a100
+## Title: DarkmoonElixirs
+## Authors: Kakjens, Dejablue
+## Notes: For easer use of Darkmoon Draughts and Tinctures.
+## SavedVariables: 
+## SavedVariablesPerCharacter: DarkmoonElixirsDB
+
+DarkmoonElixirs.lua
