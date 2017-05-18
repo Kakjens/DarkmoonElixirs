@@ -824,7 +824,7 @@ end
 	
 		
 	-- Parent Frame for currency
-local noclickFrame = CreateFrame("Frame", addonname.."noclickFrame", MyDragFrame)
+local noclickFrame = CreateFrame("Frame", addonname.."noclickFrame", MyHideFrame)
 	--noclickFrame:RegisterEvent("PLAYER_LOGIN")
 	noclickFrame:ClearAllPoints()
 	noclickFrame:SetPoint("CENTER", MyShowHideButton, "CENTER", 170, 0)
