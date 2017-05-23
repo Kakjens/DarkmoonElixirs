@@ -421,7 +421,20 @@ local function update_checbox_availability()
 		MyLimitedShowCheckDynamic:Disable()
 	end
 end
+--[[
+local function update_checbox_availability(status)
+	if status then
+			DCS_butShowifChecked:Enable()
+			_G[DCS_butShowifChecked:GetName() .. "Text"]:SetText(L["But show if checked"])
+		else
+			DCS_butShowifChecked:SetChecked(false)
+			gdbprivate.gdb.gdbdefaults.dejacharacterstatsbutShowifCheckedChecked.SetChecked = false
+			_G[DCS_butShowifChecked:GetName() .. "Text"]:SetText("|cff7f7f7f" .. L["But show if checked"] .. "|r" )
+			DCS_butShowifChecked:Disable()
+		end
+end
 
+--]]
 
 
 
@@ -724,7 +737,8 @@ end
 
 	MyDragFrame:SetScript("OnEvent", function(self, event, ...)
 		if event == "MODIFIER_STATE_CHANGED" then
-			if IsModifierKeyDown() then
+			--if IsModifierKeyDown() then
+			if IsShiftKeyDown() or IsControlKeyDown() then
 				self:EnableMouse(true)
 				--print("mod down")
 			else
@@ -904,12 +918,14 @@ local function create_currency(itemID)
 	currencyIconFrame.currencyFSTexture:SetAllPoints(currencyIconFrame)
 	currencyIconFrame:SetScript("OnEvent", function(self, event, ...)
 		updatecurrency(itemID)
-		--local itemName, currentAmount, itemTexture = GetCurrencyInfo(itemID)--Darkmoon Faire Ticket
-		--print("prize ticket")
-		--if itemName then
-		--	currencyFS:SetFormattedText("%s: %.0f", itemName,currentAmount)
-		--	currencyFSTexture:SetTexture(itemTexture)
-		--end
+		--[[
+		local itemName, currentAmount, itemTexture = GetCurrencyInfo(itemID)--Darkmoon Faire Ticket
+		print("prize ticket")
+		if itemName then
+			currencyFS:SetFormattedText("%s: %.0f", itemName,currentAmount)
+			currencyFSTexture:SetTexture(itemTexture)
+		end
+		--]]
 	end)
 end
 		
