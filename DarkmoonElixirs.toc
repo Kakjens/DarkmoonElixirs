@@ -1,5 +1,5 @@
 ## Interface: 70200
-## Version: 720a100
+## Version: v1.1
 ## Title: DarkmoonElixirs
 ## Authors: Kakjens, Dejablue
 ## Notes: For easer use of Darkmoon Draughts and Tinctures.
