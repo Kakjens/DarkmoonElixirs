@@ -408,17 +408,32 @@ end
 		setframevisibility(checked)
 	end)	
 
+local MyHideCheckStatictext = "Hide icon for Darkmoon elixir if none in bag"
+local MyLimitedShowCheckStatictext = "But display icon for Darkmoon elixir if it's in bank"
+local MyLimitedShowCheckDynamictext = "Also for Darkmoon elixirs in bank"
+local greycode = "|cff7f7f7f"
 local function update_checbox_availability()
 	local status = private.db.DarkmoonElixirsCheckboxes.dynamic_buttons
 	if status then
 		MyHideCheckStatic:Disable()
+		_G[MyHideCheckStatic:GetName() .. "Text"]:SetText(greycode .. MyHideCheckStatictext .. "|r")
 		MyLimitedShowCheckStatic:Disable()
+		_G[MyLimitedShowCheckStatic:GetName() .. "Text"]:SetText(greycode .. MyLimitedShowCheckStatictext .. "|r")
 		MyLimitedShowCheckDynamic:Enable()
+		_G[MyLimitedShowCheckDynamic:GetName() .. "Text"]:SetText(MyLimitedShowCheckDynamictext)
 	else
 		MyHideCheckStatic:Enable()
+		_G[MyHideCheckStatic:GetName() .. "Text"]:SetText(MyHideCheckStatictext)
 		local status1 = private.db.DarkmoonElixirsCheckboxes.hide_if_none_at_bag
-		if status1 then MyLimitedShowCheckStatic:Enable() else MyLimitedShowCheckStatic:Disable() end
+		if status1 then
+			MyLimitedShowCheckStatic:Enable()
+			_G[MyLimitedShowCheckStatic:GetName() .. "Text"]:SetText(MyLimitedShowCheckStatictext)
+		else
+			MyLimitedShowCheckStatic:Disable()
+			_G[MyLimitedShowCheckStatic:GetName() .. "Text"]:SetText(greycode .. MyLimitedShowCheckStatictext.. "|r")
+		end
 		MyLimitedShowCheckDynamic:Disable()
+		_G[MyLimitedShowCheckDynamic:GetName() .. "Text"]:SetText(greycode .. MyLimitedShowCheckDynamictext .. "|r")
 	end
 end
 --[[
@@ -466,7 +481,7 @@ end
 	MyHideCheckStatic:ClearAllPoints()
 	MyHideCheckStatic:SetPoint("TOPLEFT", 40, where_to_place)
 	MyHideCheckStatic:SetScale(1.25)
-	_G[MyHideCheckStatic:GetName() .. "Text"]:SetText("Hide icon for Darkmoon elixir if none in bag")
+	--_G[MyHideCheckStatic:GetName() .. "Text"]:SetText("Hide icon for Darkmoon elixir if none in bag")
 	MyHideCheckStatic.tooltipText = 'Checked hides icons for Darkmoon elixirs which are not in bag. Unchecked shows all possible Darkmoon elixirs.' --Creates a tooltip on mouseover.
 	
 	MyHideCheckStatic:SetScript("OnEvent", function(self, button, up)
@@ -477,10 +492,15 @@ end
 	end)
 
 	MyHideCheckStatic:SetScript("OnClick", function(self, button, up)
+		local checked = self:GetChecked()
+		private.db.DarkmoonElixirsCheckboxes.hide_if_none_at_bag = checked
+		update_checbox_availability()
+		--[[
 			local checked = self:GetChecked()
 			private.db.DarkmoonElixirsCheckboxes.hide_if_none_at_bag = checked
 			if checked then MyLimitedShowCheckStatic:Enable() else MyLimitedShowCheckStatic:Disable() end
-			updatebuttons()
+		--]]
+		updatebuttons()
 	end)
 		
 	where_to_place = where_to_place - decrement
@@ -488,7 +508,7 @@ end
 	MyLimitedShowCheckStatic:ClearAllPoints()
 	MyLimitedShowCheckStatic:SetPoint("TOPLEFT", 55, where_to_place)
 	MyLimitedShowCheckStatic:SetScale(1.25)
-	_G[MyLimitedShowCheckStatic:GetName() .. "Text"]:SetText("But display icon for Darkmoon elixir if it's in bank")
+	--_G[MyLimitedShowCheckStatic:GetName() .. "Text"]:SetText("But display icon for Darkmoon elixir if it's in bank")
 	MyLimitedShowCheckStatic.tooltipText = 'Checked displays icons for Darkmoon elixirs which are in bag or bank.' --Creates a tooltip on mouseover.
 	
 	MyLimitedShowCheckStatic:SetScript("OnEvent", function(self, button, up)
@@ -533,7 +553,7 @@ where_to_place = where_to_place - decrement
 	MyLimitedShowCheckDynamic:SetPoint("TOPLEFT", 55, where_to_place)
 	MyLimitedShowCheckDynamic:SetScale(1.25)
 	--_G[MyLimitedShowCheckDynamic:GetName() .. "Text"]:SetText("But display icon for Darkmoon elixir if it's in bank")
-	_G[MyLimitedShowCheckDynamic:GetName() .. "Text"]:SetText("Also for Darkmoon elixirs in bank")
+	--_G[MyLimitedShowCheckDynamic:GetName() .. "Text"]:SetText("Also for Darkmoon elixirs in bank")
 	MyLimitedShowCheckDynamic.tooltipText = 'Checked displays icons for Darkmoon elixirs which are in bag or bank.' --Creates a tooltip on mouseover.
 	
 	MyLimitedShowCheckDynamic:SetScript("OnEvent", function(self, button, up)
