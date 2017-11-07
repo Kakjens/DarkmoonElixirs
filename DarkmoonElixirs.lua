@@ -1,7 +1,13 @@
 --SavedVariables Setup
 local myPanel = {}
 local myRed, myGreen, myBlue =0, 0.753, 1
-
+local GameTooltip = GameTooltip
+local CreateFrame = CreateFrame
+local pairs = pairs
+local _G = _G
+local GetItemCount = GetItemCount
+local GetItemInfo = GetItemInfo
+local _
 local darkmoonelixirs = {}
 darkmoonelixirs = {
 	[1] = 124642, --"Darkmoon Draught of Supremacy",
@@ -67,8 +73,6 @@ local which = {}
 
 local addonname="DarkmoonElixirs"
 
-
-
 local private = {}
 private.defaults = {}
 private.defaults.DarkmoonElixirsCheckboxes = {
@@ -79,6 +83,10 @@ private.defaults.DarkmoonElixirsCheckboxes = {
 	dynamic_buttons = false,
 	show_buttons = true,
 }
+
+DarkmoonElixirsThirdRow = {}
+local numthirdrow
+local which_third_row = {}
 
 local MyDefaultConfig = private.defaults.DarkmoonElixirsCheckboxes
 
@@ -141,7 +149,7 @@ local titleFS = title:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 local MyDragFrame = CreateFrame("Frame", addonname.."DragFrame", UIParent)
 
 local function reset_position()
-	print("reseting positions")
+	DEFAULT_CHAT_FRAME:AddMessage("Reseting positions", myRed, myGreen, myBlue)
 	MyDragFrame:Hide() -- for some reason needs to be hidden
 	MyDragFrame:ClearAllPoints()
 	MyDragFrame:SetPoint("CENTER", UIParent,"CENTER", 0, 0)
@@ -169,13 +177,6 @@ local resetcheck = CreateFrame("Button", addonname.."ResetButton", myPanel.panel
  		--DarkmoonElixirsDB = private.defaults;
 		--ReloadUI();
 end)
-
-local function ShowEnableFrames()
-	MyDragFrame:Show()
-	MyDragFrame:EnableMouse(true)
-	--MyDragFrame:Show()
-	--MyDragFrame:EnableMouse(true)
-end
 
 local y
 local x
@@ -364,6 +365,123 @@ local function updatebuttons()
 	end
 end
 
+local function updatethirdrow()
+	local hide_if_none_at_bag = private.db.DarkmoonElixirsCheckboxes.hide_if_none_at_bag
+	local but_show_if_there_are_in_bank_static = private.db.DarkmoonElixirsCheckboxes.but_show_if_there_are_in_bank_static
+	y = 2 * button_pad + biasy
+	for index = 1, numthirdrow, 1 do
+		local itemID = DarkmoonElixirsThirdRow[index]
+		--attempt with charges, doesn't work
+		--local itemcount_bag = GetItemCount(itemID, false, true)
+		--local itemcount_bank = GetItemCount(itemID, true, true)
+		
+		local itemcount_bag = GetItemCount(itemID, false, false)
+		local itemcount_bank = GetItemCount(itemID, true, false)
+		
+		local button = _G["buttonframe"..itemID]
+		if button then
+			button:Hide()
+			x = button_pad * (which_third_row[itemID] - 1 )
+			button:SetPoint("BOTTOMLEFT", MyInitFrame, x, y)
+			local bagID, slotID
+			if itemcount_bag > 0 then
+				for bag = 0, 4 do
+					for slot = 1, GetContainerNumSlots(bag) do
+						local bagitemID = GetContainerItemID(bag, slot)
+						if bagitemID == itemID then
+							bagID = bag
+							slotID = slot
+						end
+					end
+				end
+			end
+			if bagID then
+				button:SetID(bagID)
+				button.slot:SetID(slotID)
+				button.slot:SetScript("OnEnter", function()
+					local bag = button:GetID()
+					local slot = button.slot:GetID()
+					GameTooltip:SetOwner(button, "ANCHOR_CURSOR")
+					GameTooltip:SetBagItem(bag, slot);
+					GameTooltip:Show()
+				end)
+			else
+				button.slot:SetScript("OnEnter", function()
+					local _, itemLink= GetItemInfo(itemID)
+					GameTooltip:SetOwner(button, "ANCHOR_CURSOR")
+					GameTooltip:SetHyperlink(itemLink)
+					GameTooltip:Show()
+				end)
+			end
+			button.slot.Count:SetText(itemcount_bag)
+			button.slot.Count:Show()
+			button.slot.Count1:Hide()
+			if itemcount_bag ~= itemcount_bank then
+				button.slot.Count1:SetText(itemcount_bank)
+				button.slot.Count1:Show()
+			end
+			button:Show()
+			if hide_if_none_at_bag then
+				if itemcount_bag == 0 then button:Hide() end
+			end
+			if itemcount_bank == 0 then
+				button.slot.icon:SetDesaturated(true)
+			else
+				button.slot.icon:SetDesaturated(false)
+			end
+			if but_show_if_there_are_in_bank_static then
+				if itemcount_bank > 0 then button:Show() end
+				if itemcount_bag == 0 then
+					button.slot.icon:SetDesaturated(true)
+				else
+					button.slot.icon:SetDesaturated(false)
+				end
+			end
+			_G["buttonframe"..itemID] = button
+		end
+	end
+
+end
+
+
+local function createthirdrowbutton(itemID)
+	--local button = CreateFrame("Frame", "buttonframe"..itemID, MyInitFrame)
+	local button = CreateFrame("Frame", "buttonframe"..itemID, MyHideFrame)
+			--local index = #parent.beacons + 1 or 1
+			
+			button:SetSize(buttonSize, buttonSize);
+			
+			button.slot = CreateFrame("Button", "buttonslotframe"..itemID, button, "ContainerFrameItemButtonTemplate")
+			
+			--button.slot:RegisterForClicks("AnyDown")
+			button.slot:RegisterForClicks("RightButtonDown")
+			
+			button.slot:SetSize(buttonSize, buttonSize)
+			button.slot:SetPoint("CENTER")
+			--if stage[itemID] then y = 0 else y = buttonSize + padding end
+			--button:SetPoint("BOTTOMLEFT", MyInitFrame, (button_pad*which[itemID]), y)
+			local name, _, _,_,_,_,_,_,_,texture,_ = GetItemInfo(itemID)
+			button.slot.icon:SetTexture(texture)
+
+			button.slot.Count = button.slot:CreateFontString("$parent_FontString","OVERLAY")
+			button.slot.Count:SetPoint("BOTTOMRIGHT", button.slot)
+			button.slot.Count:SetFont("Fonts\\FRIZQT__.TTF", 14, "THINOUTLINE")
+			button.slot.Count:SetTextColor(1, 1, 1);
+			
+			button.slot.Count1 = button.slot:CreateFontString("$parent_FontString","OVERLAY")
+			button.slot.Count1:SetPoint("TOPRIGHT", button.slot)
+			button.slot.Count1:SetFont("Fonts\\FRIZQT__.TTF", 14, "THINOUTLINE")
+			button.slot.Count1:SetTextColor(1, 1, 1);			
+			
+			button.slot:SetScript("OnDragStart", nil)
+			button.slot:SetScript("OnLeave", GameTooltip_Hide)
+			button.slot:Show()
+			
+			button.slot.icon:SetTexCoord(0.075, 0.925, 0.075, 0.925);
+			button.slot.BattlepayItemTexture:Hide()
+		end	
+
+
 local MyStaticCheck = CreateFrame("CheckButton", addonname.."StaticCheck",  myPanel.panel, "InterfaceOptionsCheckButtonTemplate")
 local MyDynamicCheck = CreateFrame("CheckButton", addonname.."DynamicCheck",  myPanel.panel, "InterfaceOptionsCheckButtonTemplate")
 local MyHideCheckStatic = CreateFrame("CheckButton", addonname.."HideCheckStatic",  myPanel.panel, "InterfaceOptionsCheckButtonTemplate")
@@ -474,6 +592,7 @@ end
 		MyDynamicCheck:SetChecked(not checked)
 		update_checbox_availability()
 		updatebuttons()
+		updatethirdrow()
 	end)
 	
 	where_to_place = where_to_place - decrement
@@ -501,6 +620,7 @@ end
 			if checked then MyLimitedShowCheckStatic:Enable() else MyLimitedShowCheckStatic:Disable() end
 		--]]
 		updatebuttons()
+		updatethirdrow()
 	end)
 		
 	where_to_place = where_to_place - decrement
@@ -521,6 +641,7 @@ end
 		local checked = self:GetChecked()
 		private.db.DarkmoonElixirsCheckboxes.but_show_if_there_are_in_bank_static = checked
 		updatebuttons()
+		updatethirdrow()
 	end)	
 	
 	where_to_place = where_to_place - decrement
@@ -545,6 +666,7 @@ end
 		MyStaticCheck:SetChecked(not checked)
 		update_checbox_availability()
 		updatebuttons()
+		updatethirdrow()
 	end)	
 	
 where_to_place = where_to_place - decrement
@@ -566,11 +688,12 @@ where_to_place = where_to_place - decrement
 		local checked = self:GetChecked()
 		private.db.DarkmoonElixirsCheckboxes.but_show_if_there_are_in_bank_dynamic = checked
 		updatebuttons()
+		updatethirdrow()
 	end)	
 
 	
 
-
+--[[
 --Open Categaories Fix
 do
 	local function get_panel_name(panel)
@@ -639,6 +762,7 @@ do
 	hooksecurefunc("InterfaceOptionsFrame_OpenToCategory", InterfaceOptionsFrame_OpenToCategory_Fix)
 end
 
+--]]
 --addons Slash Setup
 local RegisteredEvents = {};
 local myslash = CreateFrame("Frame", addonname.."Slash", UIParent)
@@ -648,14 +772,20 @@ myslash:SetScript("OnEvent", function (self, event, ...)
 		return RegisteredEvents[event](self, event, ...) 
 	end
 end)
+local addon
+SLASH_DARKMOONELIXIRS1 = '/dme'
+local slashcommand = SLASH_DARKMOONELIXIRS1
 
-function RegisteredEvents:ADDON_LOADED(event, addon, ...)
+local upperaddonname = string.upper(addonname)
+
+function RegisteredEvents:ADDON_LOADED( ...)
+	_, addon = ...
 	if (addon == addonname) then
-		SLASH_DARKMOONELIXIRS1 = '/dme'
-		SlashCmdList[addonname] = function (msg, editbox)
-			myPanel.SlashCmdHandler(msg, editbox)	
+		--SLASH_DARKMOONELIXIRS1 = '/dme'
+		SlashCmdList[upperaddonname] = function (...)
+			myPanel.SlashCmdHandler(...)	
 		end
-		DEFAULT_CHAT_FRAME:AddMessage(addonname .. " loaded successfully. Type " .. SLASH_DARKMOONELIXIRS1 .. " for usage", myRed, myGreen, myBlue)
+		DEFAULT_CHAT_FRAME:AddMessage(addonname .. " loaded successfully. Type " .. slashcommand .. " for usage", myRed, myGreen, myBlue)
 	end
 end
 
@@ -664,9 +794,11 @@ for k, v in pairs(RegisteredEvents) do
 end
 
 function myPanel.ShowHelp()
-	DEFAULT_CHAT_FRAME:AddMessage(addonname .. " Slash commands (" .. SLASH_DARKMOONELIXIRS1 .. "):", myRed, myGreen, myBlue)
-	DEFAULT_CHAT_FRAME:AddMessage("  " .. SLASH_DARKMOONELIXIRS1 .. " config: Open the " .. addonname .. " addon config menu.", myRed, myGreen, myBlue)
-	DEFAULT_CHAT_FRAME:AddMessage("  " .. SLASH_DARKMOONELIXIRS1 .. " reset:  Resets " .. addonname .. " frames to default positions.", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage(addonname .. " Slash commands (" .. slashcommand .. "):", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage("  " .. slashcommand .. " config: Open the " .. addonname .. " addon config menu.", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage("  " .. slashcommand .. " reset:  Resets " .. addonname .. " frames to default positions.", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage("  " .. slashcommand .. " add itemname:  Adds an item to track.", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage("  " .. slashcommand .. " remove itemname:  Removes an item from tracking.", myRed, myGreen, myBlue)
 end
 
 --function myPanel.SetConfigToDefaults()
@@ -679,22 +811,25 @@ function myPanel.GetConfigValue(key)
 	return DarkmoonElixirsDB.DarkmoonElixirsCheckboxes[key]
 end
 
+local mem
 function myPanel.PrintPerformanceData()
 	UpdateAddOnMemoryUsage()
-	local mem = GetAddOnMemoryUsage(addonname)
-	print(addonname,"is currently using " .. mem .. " kbytes of memory")
-	collectgarbage(collect)
+	mem = GetAddOnMemoryUsage(addonname)
+	DEFAULT_CHAT_FRAME:AddMessage(addonname .. "is currently using " .. mem .. " kbytes of memory", myRed, myGreen, myBlue)
+	collectgarbage("collect")
 	UpdateAddOnMemoryUsage()
 	mem = GetAddOnMemoryUsage(addonname)
-	print(addonname,"is currently using " .. mem .. " kbytes of memory after garbage collection")
+	DEFAULT_CHAT_FRAME:AddMessage(addonname .. "is currently using " .. mem .. " kbytes of memory after garbage collection", myRed, myGreen, myBlue)
 end
-
+local lowcase
+local smth
 function myPanel.SlashCmdHandler(msg, editbox)
 	--print("command is " .. msg .. "\n")
-	if (string.lower(msg) == "config") then
+	lowcase = string.lower(msg)
+	if (lowcase == "config") then
 		InterfaceOptionsFrame_OpenToCategory(addonname);
-	elseif (string.lower(msg) == "dumpconfig") then
-		print("Current values:")
+	elseif (lowcase == "dumpconfig") then
+		DEFAULT_CHAT_FRAME:AddMessage("Current values:", myRed, myGreen, myBlue)
 		for k,value2 in pairs(MyDefaultConfig) do
 			local value1 = myPanel.GetConfigValue(k)
 			if value1 == value2 then
@@ -704,22 +839,198 @@ function myPanel.SlashCmdHandler(msg, editbox)
 				DEFAULT_CHAT_FRAME:AddMessage(k .. " " .. tostring(value1) .. " Default: " .. tostring(value2), myRed, myGreen, myBlue)
 			end
 		end
-	elseif (string.lower(msg) == "lock") then
-		mylockcheckframe:Hide()
-		mylockcheck:SetChecked(true)
-	elseif (string.lower(msg) == "unlock") then
-		mylockcheckframe:Show()
-		mylockcheck:SetChecked(false)
-	elseif (string.lower(msg) == "reset") then
+	elseif (lowcase == "reset") then
 		DarkmoonElixirsDB = private.defaults;
 		ReloadUI();
-	elseif (string.lower(msg) == "perf") then
+	elseif (lowcase == "perf") then
 		myPanel.PrintPerformanceData()
+	elseif (lowcase == "remove") then
+		print("Syntax: /dme remove text or /dme remove itemlink")
+	elseif (string.match(lowcase,'(%a+)%s*')) == "remove" then
+		lowcase = string.gsub(lowcase,"remove ","",1)
+		smth = string.sub(msg,8)
+		--print(smth)
+		local itemname = string.lower(strmatch(smth, "h%[(.-)%]|") or smth)
+		print("Search string is",itemname..".")
+		local temp = -1
+		local realitemID
+		local itemlist = {}
+		local itemcount = 0
+		local exact_match = false
+		local exact_match_itemID
+		local exact_match_temp
+		for i = 1, numthirdrow do
+			local itemID = DarkmoonElixirsThirdRow[i]
+			local loopitemname = string.lower(GetItemInfo(itemID))
+			--print(loopitemname)
+			if string.find(loopitemname,itemname) or loopitemname == itemname then
+				if not itemlist[loopitemname] then
+					itemcount = itemcount + 1
+					--print(itemcount,"match")
+					itemlist[loopitemname] = {}
+					temp = i
+					realitemID = itemID
+					if loopitemname == itemname then
+						exact_match = true
+						exact_match_itemID = itemID
+						exact_match_temp = i
+					end
+					--print("match found")
+				end
+			end
+		end
+		if itemcount == 1 then
+			print("Only one match found - removing.")
+			--if temp > -1 then
+			which_third_row[DarkmoonElixirsThirdRow[numthirdrow]] = which_third_row[DarkmoonElixirsThirdRow[temp]]
+			DarkmoonElixirsThirdRow[temp] = DarkmoonElixirsThirdRow[numthirdrow]
+			DarkmoonElixirsThirdRow[numthirdrow] = nil
+			numthirdrow = numthirdrow - 1
+			which_third_row[realitemID] = nil
+			_G["buttonframe"..realitemID]:Hide()
+			updatethirdrow()
+		else
+			if itemcount == 0 then
+				print("No matches found.")
+			else
+				print(itemcount,"matches found.")
+				if exact_match then
+					print("Due to exact match can proceed.")
+					which_third_row[DarkmoonElixirsThirdRow[numthirdrow]] = which_third_row[DarkmoonElixirsThirdRow[exact_match_temp]]
+					DarkmoonElixirsThirdRow[exact_match_temp] = DarkmoonElixirsThirdRow[numthirdrow]
+					DarkmoonElixirsThirdRow[numthirdrow] = nil
+					numthirdrow = numthirdrow - 1
+					which_third_row[exact_match_itemID] = nil
+					_G["buttonframe"..exact_match_itemID]:Hide()
+					updatethirdrow()
+				end
+			end
+		end
+	elseif (lowcase == "add") then
+		print("Syntax: /dme add text or /dme add itemlink")
+	elseif (string.match(lowcase,'(%a+)%s*')) == "add" then
+		lowcase = string.gsub(lowcase,"add ","",1)
+		smth = string.sub(msg,5)
+		--print("trying to search for",smth)
+		--local itemname = smth and strmatch(smth, "h%[(.-)%]|")
+		local itemname = string.lower(strmatch(smth, "h%[(.-)%]|") or smth)
+		print("Search string is",itemname..". Not considering Dakrmoon Tinctures and Draughts, as well as already added items.")
+		--local bagID, slotID
+		local itemlist = {}
+		local itemcount = 0
+		local itemID
+		local itemlink
+		local realitemlink
+		local exact_match = false
+		local exact_match_itemID
+		for bag = 0, 4 do
+			for slot = 1, GetContainerNumSlots(bag) do
+				itemlink = GetContainerItemLink(bag, slot)
+				if itemlink then
+					itemlink = string.lower(strmatch(itemlink, "h%[(.-)%]|"))
+					--print(itemlink)
+					--itemlink = " " .. string.lower(itemlink) .. " "
+					--print("found",itemlink,"vs",itemname,"equals",string.find(itemlink,itemname), "or",itemlink == itemname,string.find(itemname,itemlink))
+					if string.find(itemlink,itemname) or itemlink == itemname then
+						--print("found a match",itemlink)
+						--bagID = bag
+						--slotID = slot
+						if not itemlist[itemlink] then
+							itemID = GetContainerItemID(bag, slot)
+							if not which[itemID] then
+								if not which_third_row[itemID] then
+									itemcount = itemcount + 1
+									--print(itemcount,"match")
+									itemlist[itemlink] = {}
+									realitemlink = itemlink
+									if itemlink == itemname then
+										exact_match = true
+										exact_match_itemID = itemID
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		--print("done")
+		--print(itemname)
+		if itemcount == 1 then
+			print("Only one match found - trying to add.")
+			--if which[itemID] then
+			--	print("No need to add a button for Darkmoon Draughts and Tinctures")
+			--else
+			--	if which_third_row[itemID] then
+			--		print("There's already button for",realitemlink)
+			--	else
+					if numthirdrow < 8 then
+						numthirdrow = numthirdrow + 1
+						DarkmoonElixirsThirdRow[numthirdrow] = itemID
+						which_third_row[itemID] = numthirdrow
+						createthirdrowbutton(itemID)
+						updatethirdrow()
+					else
+						print("Can't have more than 8 extra buttons, try /dme remove item.")
+					end
+				--end
+			--end
+		else
+			if itemcount == 0 then
+				print("No matches found.")
+			else
+				print(itemcount,"matches found.")
+				if exact_match then
+					print("Due to exact match can proceed further.")
+					--if which[exact_match_itemID] then
+					--	print("No need to add a button for Darkmoon Draughts and Tinctures")
+					--else
+					--	if which_third_row[exact_match_itemID] then
+					--		print("There's already button for",realitemlink)
+					--	else
+							if numthirdrow < 8 then
+								numthirdrow = numthirdrow + 1
+								DarkmoonElixirsThirdRow[numthirdrow] = exact_match_itemID
+								which_third_row[exact_match_itemID] = numthirdrow
+								createthirdrowbutton(exact_match_itemID)
+								updatethirdrow()
+							else
+								print("Can't have more than 8 extra buttons, try /dme remove item.")
+							end
+					--	end
+					--end
+				end
+			end
+		end
+		--[[
+		print("trying to search for",lowcase)
+		local bagID, slotID
+		local itemlist = {}
+		for bag = 0, 4 do
+			for slot = 1, GetContainerNumSlots(bag) do
+				local itemlink = GetContainerItemLink(bag, slot)
+				if itemlink then
+					--itemlink = " " .. string.lower(itemlink) .. " "
+					itemlink = string.lower(itemlink)
+					print("found",itemlink,"vs",lowcase,"equals",string.find(itemlink,lowcase), "or",itemlink == lowcase)
+					if string.find(itemlink,lowcase) then
+						print("found a match",itemlink)
+						bagID = bag
+						slotID = slot
+					end
+				end
+			end
+		end
+		print("done")
+		print(lowcase)
+		
+		
+		--]]	
 	else
 		myPanel.ShowHelp()
 	end
 end
-	SlashCmdList[string.upper(addonname)] = myPanel.SlashCmdHandler;
+	SlashCmdList[upperaddonname] = myPanel.SlashCmdHandler;
 
 
 	-- itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, 
@@ -773,13 +1084,13 @@ end
 	
 	MyDragFrame:SetScript("OnDragStop", MyDragFrame.StopMovingOrSizing)
 	
-local MyHideFrame = CreateFrame("Frame", addonname.."HideFrame", MyDragFrame)
+--local MyHideFrame = CreateFrame("Frame", addonname.."HideFrame", MyDragFrame)
 	--MyHideFrame:RegisterEvent("PLAYER_LOGIN")
 	MyHideFrame:SetClampedToScreen(true)
 	MyHideFrame:ClearAllPoints()
 	MyHideFrame:SetPoint("BOTTOMLEFT", MyDragFrame)
 	MyHideFrame:SetWidth(236)
-	MyHideFrame:SetHeight(150)
+	MyHideFrame:SetHeight(180)
 	
 	--Debugging Texture
 	--local MyHideFrametexture=MyHideFrame:CreateTexture(nil,"ARTWORK")
@@ -962,8 +1273,7 @@ cache_writer_curr:SetScript('OnEvent', function(self, event, ...)
 			create_currency(itemID)
 			wait_curr[itemID] = nil
 			updatecurrency(itemID)
-			--if wait == {} then updatebuttons();self:UnregisterEvent(event) end --test
-			if wait_curr == {} then self:UnregisterEvent(event) end
+			if not next(wait_curr) then self:UnregisterEvent(event) end
 		end
 	end
 end)
@@ -1037,7 +1347,8 @@ cache_writer:SetScript('OnEvent', function(self, event, ...)
 			--print(itemID,"received")
 			createonebutton(itemID)
 			wait[itemID] = nil
-			if wait == {} then updatebuttons();self:UnregisterEvent(event) end --test
+			--print(next(wait))
+			if not next(wait) then updatebuttons();self:UnregisterEvent(event) end --test
 		end
 	end
 end)
@@ -1054,7 +1365,37 @@ local function createButtons()
 		end
 	end
 end
-		 
+
+
+local wait_third_row = {}
+local cache_writer_third_row = CreateFrame('Frame')
+cache_writer_third_row:SetScript('OnEvent', function(self, event, ...)
+	if event == info_received then
+		-- the info is now downloaded and cached
+		local itemID = ...
+		if wait_third_row[itemID] then
+			--print(itemID,"received")
+			createthirdrowbutton(itemID)
+			wait_third_row[itemID] = nil
+			if not next(wait_third_row) then updatethirdrow();self:UnregisterEvent(event) end
+		end
+	end
+end)
+cache_writer_third_row:RegisterEvent(info_received)
+
+local function createthirdrow()
+	for index = 1, numthirdrow, 1 do
+		local itemID = DarkmoonElixirsThirdRow[index]
+		local name = GetItemInfo(itemID)
+		which_third_row[itemID] = index
+		if name then
+			createthirdrowbutton(itemID)
+		else
+		--add item to wait list
+			wait_third_row[itemID] = {}
+		end
+	end
+end		 
 		MyInitFrame:SetPoint("BOTTOMLEFT", MyHideFrame, 2, buttonSize );
 		local login_event = "PLAYER_LOGIN"
 		MyInitFrame:RegisterEvent(login_event)
@@ -1074,9 +1415,12 @@ end
 				self:SetSize(width, height)
 				createButtons()
 				createcurrencyloop()
+				numthirdrow = #DarkmoonElixirsThirdRow
+				createthirdrow()
 				updatebuttons()
+				updatethirdrow()
 				return
 			end
 			updatebuttons()
-			
+			updatethirdrow()
 		end)
