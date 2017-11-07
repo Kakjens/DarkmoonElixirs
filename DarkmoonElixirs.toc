@@ -1,9 +1,10 @@
 ## Interface: 70200
-## Version: v1.1
+## Version: v1.2
+## X-Website: https://mods.curse.com/addons/wow/268211-darkmoon-elixirs
 ## Title: DarkmoonElixirs
 ## Authors: Kakjens, Dejablue
 ## Notes: For easer use of Darkmoon Draughts and Tinctures.
 ## SavedVariables: 
-## SavedVariablesPerCharacter: DarkmoonElixirsDB
+## SavedVariablesPerCharacter: DarkmoonElixirsDB, DarkmoonElixirsThirdRow
 
 DarkmoonElixirs.lua
