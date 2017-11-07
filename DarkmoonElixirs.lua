@@ -1273,8 +1273,7 @@ cache_writer_curr:SetScript('OnEvent', function(self, event, ...)
 			create_currency(itemID)
 			wait_curr[itemID] = nil
 			updatecurrency(itemID)
-			--if wait == {} then updatebuttons();self:UnregisterEvent(event) end --test
-			if wait_curr == {} then self:UnregisterEvent(event) end
+			if not next(wait_curr) then self:UnregisterEvent(event) end
 		end
 	end
 end)
@@ -1348,7 +1347,8 @@ cache_writer:SetScript('OnEvent', function(self, event, ...)
 			--print(itemID,"received")
 			createonebutton(itemID)
 			wait[itemID] = nil
-			if wait == {} then updatebuttons();self:UnregisterEvent(event) end --test
+			--print(next(wait))
+			if not next(wait) then updatebuttons();self:UnregisterEvent(event) end --test
 		end
 	end
 end)
@@ -1377,7 +1377,7 @@ cache_writer_third_row:SetScript('OnEvent', function(self, event, ...)
 			--print(itemID,"received")
 			createthirdrowbutton(itemID)
 			wait_third_row[itemID] = nil
-			if wait_third_row == {} then updatethirdrow();self:UnregisterEvent(event) end
+			if not next(wait_third_row) then updatethirdrow();self:UnregisterEvent(event) end
 		end
 	end
 end)
