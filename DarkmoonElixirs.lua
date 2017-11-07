@@ -141,7 +141,7 @@ local titleFS = title:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 local MyDragFrame = CreateFrame("Frame", addonname.."DragFrame", UIParent)
 
 local function reset_position()
-	print("reseting positions")
+	DEFAULT_CHAT_FRAME:AddMessage("Reseting positions", myRed, myGreen, myBlue)
 	MyDragFrame:Hide() -- for some reason needs to be hidden
 	MyDragFrame:ClearAllPoints()
 	MyDragFrame:SetPoint("CENTER", UIParent,"CENTER", 0, 0)
@@ -648,14 +648,20 @@ myslash:SetScript("OnEvent", function (self, event, ...)
 		return RegisteredEvents[event](self, event, ...) 
 	end
 end)
+local addon
+SLASH_DARKMOONELIXIRS1 = '/dme'
+local slashcommand = SLASH_DARKMOONELIXIRS1
 
-function RegisteredEvents:ADDON_LOADED(event, addon, ...)
+local upperaddonname = string.upper(addonname)
+
+function RegisteredEvents:ADDON_LOADED( ...)
+	_, addon = ...
 	if (addon == addonname) then
-		SLASH_DARKMOONELIXIRS1 = '/dme'
-		SlashCmdList[addonname] = function (msg, editbox)
-			myPanel.SlashCmdHandler(msg, editbox)	
+		--SLASH_DARKMOONELIXIRS1 = '/dme'
+		SlashCmdList[upperaddonname] = function (...)
+			myPanel.SlashCmdHandler(...)	
 		end
-		DEFAULT_CHAT_FRAME:AddMessage(addonname .. " loaded successfully. Type " .. SLASH_DARKMOONELIXIRS1 .. " for usage", myRed, myGreen, myBlue)
+		DEFAULT_CHAT_FRAME:AddMessage(addonname .. " loaded successfully. Type " .. slashcommand .. " for usage", myRed, myGreen, myBlue)
 	end
 end
 
@@ -664,9 +670,9 @@ for k, v in pairs(RegisteredEvents) do
 end
 
 function myPanel.ShowHelp()
-	DEFAULT_CHAT_FRAME:AddMessage(addonname .. " Slash commands (" .. SLASH_DARKMOONELIXIRS1 .. "):", myRed, myGreen, myBlue)
-	DEFAULT_CHAT_FRAME:AddMessage("  " .. SLASH_DARKMOONELIXIRS1 .. " config: Open the " .. addonname .. " addon config menu.", myRed, myGreen, myBlue)
-	DEFAULT_CHAT_FRAME:AddMessage("  " .. SLASH_DARKMOONELIXIRS1 .. " reset:  Resets " .. addonname .. " frames to default positions.", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage(addonname .. " Slash commands (" .. slashcommand .. "):", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage("  " .. slashcommand .. " config: Open the " .. addonname .. " addon config menu.", myRed, myGreen, myBlue)
+	DEFAULT_CHAT_FRAME:AddMessage("  " .. slashcommand .. " reset:  Resets " .. addonname .. " frames to default positions.", myRed, myGreen, myBlue)
 end
 
 --function myPanel.SetConfigToDefaults()
@@ -679,22 +685,25 @@ function myPanel.GetConfigValue(key)
 	return DarkmoonElixirsDB.DarkmoonElixirsCheckboxes[key]
 end
 
+local mem
 function myPanel.PrintPerformanceData()
 	UpdateAddOnMemoryUsage()
-	local mem = GetAddOnMemoryUsage(addonname)
-	print(addonname,"is currently using " .. mem .. " kbytes of memory")
-	collectgarbage(collect)
+	mem = GetAddOnMemoryUsage(addonname)
+	DEFAULT_CHAT_FRAME:AddMessage(addonname .. "is currently using " .. mem .. " kbytes of memory", myRed, myGreen, myBlue)
+	collectgarbage("collect")
 	UpdateAddOnMemoryUsage()
 	mem = GetAddOnMemoryUsage(addonname)
-	print(addonname,"is currently using " .. mem .. " kbytes of memory after garbage collection")
+	DEFAULT_CHAT_FRAME:AddMessage(addonname .. "is currently using " .. mem .. " kbytes of memory after garbage collection", myRed, myGreen, myBlue)
 end
-
+local lowcase
+local smth
 function myPanel.SlashCmdHandler(msg, editbox)
 	--print("command is " .. msg .. "\n")
-	if (string.lower(msg) == "config") then
+	lowcase = string.lower(msg)
+	if (lowcase == "config") then
 		InterfaceOptionsFrame_OpenToCategory(addonname);
-	elseif (string.lower(msg) == "dumpconfig") then
-		print("Current values:")
+	elseif (lowcase == "dumpconfig") then
+		DEFAULT_CHAT_FRAME:AddMessage("Current values:", myRed, myGreen, myBlue)
 		for k,value2 in pairs(MyDefaultConfig) do
 			local value1 = myPanel.GetConfigValue(k)
 			if value1 == value2 then
@@ -704,22 +713,16 @@ function myPanel.SlashCmdHandler(msg, editbox)
 				DEFAULT_CHAT_FRAME:AddMessage(k .. " " .. tostring(value1) .. " Default: " .. tostring(value2), myRed, myGreen, myBlue)
 			end
 		end
-	elseif (string.lower(msg) == "lock") then
-		mylockcheckframe:Hide()
-		mylockcheck:SetChecked(true)
-	elseif (string.lower(msg) == "unlock") then
-		mylockcheckframe:Show()
-		mylockcheck:SetChecked(false)
-	elseif (string.lower(msg) == "reset") then
+	elseif (lowcase == "reset") then
 		DarkmoonElixirsDB = private.defaults;
 		ReloadUI();
-	elseif (string.lower(msg) == "perf") then
-		myPanel.PrintPerformanceData()
+	elseif (lowcase == "perf") then
+		myPanel.PrintPerformanceData()	
 	else
 		myPanel.ShowHelp()
 	end
 end
-	SlashCmdList[string.upper(addonname)] = myPanel.SlashCmdHandler;
+	SlashCmdList[upperaddonname] = myPanel.SlashCmdHandler;
 
 
 	-- itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, 
@@ -773,13 +776,13 @@ end
 	
 	MyDragFrame:SetScript("OnDragStop", MyDragFrame.StopMovingOrSizing)
 	
-local MyHideFrame = CreateFrame("Frame", addonname.."HideFrame", MyDragFrame)
+--local MyHideFrame = CreateFrame("Frame", addonname.."HideFrame", MyDragFrame)
 	--MyHideFrame:RegisterEvent("PLAYER_LOGIN")
 	MyHideFrame:SetClampedToScreen(true)
 	MyHideFrame:ClearAllPoints()
 	MyHideFrame:SetPoint("BOTTOMLEFT", MyDragFrame)
 	MyHideFrame:SetWidth(236)
-	MyHideFrame:SetHeight(150)
+	MyHideFrame:SetHeight(180)
 	
 	--Debugging Texture
 	--local MyHideFrametexture=MyHideFrame:CreateTexture(nil,"ARTWORK")
